@@ -14,3 +14,6 @@ Which can then be used to set up local Jetty without hitting
 ```
 java.net.BindException: Address already in use
 ```
+
+## Contributors
+[Shlomi Alfasi](https://github.com/shlomialfasi)
