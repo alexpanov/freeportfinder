@@ -2,6 +2,7 @@ package me.alexpanov.net;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,26 +77,54 @@ public final class FreePortFinder {
      * @return the available port
      */
     public static synchronized int findFreeLocalPort() {
-        int next = findFreeLocalPort(currentMinPort.get());
+        return findFreeLocalPort(null);
+    }
+
+    /**
+     * Gets the next available port starting at the lowest number. This is the preferred
+     * method to use. The port return is immediately marked in use and doesn't rely on the caller actually opening
+     * the port.
+     *
+     * @param bindAddress the address that will try to bind
+     * @throws IllegalArgumentException is thrown if the port number is out of range
+     * @throws NoSuchElementException if there are no ports available
+     * @return the available port
+     */
+    public static synchronized int findFreeLocalPort(InetAddress bindAddress) {
+        int next = findFreeLocalPort(currentMinPort.get(), bindAddress);
         currentMinPort.set(next + 1);
         return next;
+    }
+
+    /**
+     * Gets the next available port starting at the lowest number. This is the preferred
+     * method to use. The port return is immediately marked in use and doesn't rely on the caller actually opening
+     * the port.
+     *
+     * @throws IllegalArgumentException is thrown if the port number is out of range
+     * @throws NoSuchElementException if there are no ports available
+     * @return the available port
+     */
+    public static synchronized int findFreeLocalPort(int fromPort) {
+        return findFreeLocalPort(fromPort, null);
     }
 
     /**
      * Gets the next available port starting at a given from port.
      *
      * @param fromPort the from port to scan for availability
+     * @param bindAddress the address that will try to bind
      * @throws IllegalArgumentException is thrown if the port number is out of range
      * @throws NoSuchElementException if there are no ports available
      * @return the available port
      */
-    public static synchronized int findFreeLocalPort(int fromPort) {
+    public static synchronized int findFreeLocalPort(int fromPort, InetAddress bindAddress) {
         if (fromPort < currentMinPort.get() || fromPort > MAX_PORT_NUMBER) {
             throw new IllegalArgumentException("From port number not in valid range: " + fromPort);
         }
 
         for (int i = fromPort; i <= MAX_PORT_NUMBER; i++) {
-            if (available(i)) {
+            if (available(i, bindAddress)) {
                 return i;
             }
         }
@@ -104,13 +133,51 @@ public final class FreePortFinder {
     }
 
     /**
+     * Gets the next available port starting at a given from port.
+     *
+     * @param bindAddresses the addresses that will try to bind
+     * @throws IllegalArgumentException is thrown if the port number is out of range
+     * @throws NoSuchElementException if there are no ports available
+     * @return the available port
+     */
+    public static synchronized int findFreeLocalPortOnAddresses(InetAddress ... bindAddresses) {
+        int fromPort = currentMinPort.get();
+        if (fromPort < currentMinPort.get() || fromPort > MAX_PORT_NUMBER) {
+            throw new IllegalArgumentException("From port number not in valid range: " + fromPort);
+        }
+        if (bindAddresses != null) {
+            for (int j = fromPort; j <= MAX_PORT_NUMBER; j++) {
+                for (int i = 0; i < bindAddresses.length ; i++) {
+                    if (available(j, bindAddresses[i])) {
+                        currentMinPort.set(j + 1);
+                        return j;
+                    }
+                }
+            }
+        }
+
+        throw new NoSuchElementException("Could not find an available port above " + fromPort);
+    }
+        /**
+         * Checks to see if a specific port is available.
+         *
+         * @param port the port number to check for availability
+         * @return <tt>true</tt> if the port is available, or <tt>false</tt> if not
+         * @throws IllegalArgumentException is thrown if the port number is out of range
+         */
+    public static boolean available(int port) throws IllegalArgumentException {
+        return available(port, null);
+    }
+
+    /**
      * Checks to see if a specific port is available.
      *
      * @param port the port number to check for availability
+     * @param bindAddress the address that will try to bind
      * @return <tt>true</tt> if the port is available, or <tt>false</tt> if not
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
-    public static boolean available(int port) throws IllegalArgumentException {
+    public static boolean available(int port, InetAddress bindAddress) throws IllegalArgumentException {
         if (port < currentMinPort.get() || port > MAX_PORT_NUMBER) {
             throw new IllegalArgumentException("Invalid start currentMinPort: " + port);
         }
@@ -118,9 +185,9 @@ public final class FreePortFinder {
         ServerSocket ss = null;
         DatagramSocket ds = null;
         try {
-            ss = new ServerSocket(port);
+            ss = (bindAddress != null) ? new ServerSocket(port, 50, bindAddress) : new ServerSocket(port);
             ss.setReuseAddress(true);
-            ds = new DatagramSocket(port);
+            ds = (bindAddress != null) ? new DatagramSocket(port, bindAddress) : new DatagramSocket(port);
             ds.setReuseAddress(true);
             return true;
         } catch (IOException e) {
@@ -140,7 +207,7 @@ public final class FreePortFinder {
         }
 
         return false;
-    }
 
+    }
 }
 
