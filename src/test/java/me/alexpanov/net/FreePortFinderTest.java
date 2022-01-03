@@ -3,10 +3,12 @@ package me.alexpanov.net;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FreePortFinderTest {
 
@@ -17,9 +19,14 @@ public class FreePortFinderTest {
         assertThat(serverSocket.isBound(), is(true));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void overTheLimitPortAllocationShouldFail() throws Exception {
-        FreePortFinder.findFreeLocalPort(FreePortFinder.MAX_PORT_NUMBER + 1);
+        assertThrows(IllegalArgumentException.class, new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                FreePortFinder.findFreeLocalPort(FreePortFinder.MAX_PORT_NUMBER + 1);
+            }
+        });
     }
 
     @Test
