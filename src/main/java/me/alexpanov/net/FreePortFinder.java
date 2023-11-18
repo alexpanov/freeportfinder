@@ -41,7 +41,7 @@ public final class FreePortFinder {
     private FreePortFinder() {
         // Do nothing
     }
-    
+
     static {
         int port = MIN_PORT_NUMBER;
         ServerSocket ss = null;
@@ -53,7 +53,7 @@ public final class FreePortFinder {
                 ss = null;
                 port += 200;
             }
-        } 
+        }
         LOCK = ss;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
@@ -162,7 +162,7 @@ public final class FreePortFinder {
          * Checks to see if a specific port is available.
          *
          * @param port the port number to check for availability
-         * @return <tt>true</tt> if the port is available, or <tt>false</tt> if not
+         * @return {@code true} if the port is available, or {@code false} if not
          * @throws IllegalArgumentException is thrown if the port number is out of range
          */
     public static boolean available(int port) throws IllegalArgumentException {
@@ -174,7 +174,7 @@ public final class FreePortFinder {
      *
      * @param port the port number to check for availability
      * @param bindAddress the address that will try to bind
-     * @return <tt>true</tt> if the port is available, or <tt>false</tt> if not
+     * @return {@code true} if the port is available, or {@code false} if not
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
     public static boolean available(int port, InetAddress bindAddress) throws IllegalArgumentException {
